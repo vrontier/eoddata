@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eoddata"
+version = "0.1.0"
+description = "Python package for the EODData REST API."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Mike Quest", email = "github@vrontier.org" }]
+keywords = ["finance", "markets", "eod", "historical-data", "api", "stocks", "eoddata"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Typing :: Typed"
+]
+
+dependencies = [
+  "requests>=2.32.0,<3"
+]
+
+[project.urls]
+Homepage = "https://github.com/vrontier/eoddata"
+Repository = "https://github.com/vrontier/eoddata"
+Issues = "https://github.com/vrontier/eoddata/issues"
+
+[tool.setuptools.package-data]
+eoddata = ["py.typed"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["eoddata*"]
