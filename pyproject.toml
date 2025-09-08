@@ -9,7 +9,7 @@ description = "Python package for the EODData REST API."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
-authors = [{ name = "Mike Quest", email = "github@vrontier.org" }]
+authors = [{ name = "Mike Quest", email = "pypi-eoddata@vrontier.org" }]
 keywords = ["finance", "markets", "eod", "historical-data", "api", "stocks", "eoddata"]
 classifiers = [
   "Programming Language :: Python :: 3",
