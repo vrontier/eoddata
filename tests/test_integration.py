@@ -10,7 +10,7 @@ import pytest
 from eoddata import EODDataClient, EODDataError
 
 # Skip integration tests by default
-# pytestmark = pytest.mark.skip(reason="Integration tests disabled by default")
+pytestmark = pytest.mark.skip(reason="Integration tests disabled by default")
 
 
 def load_env_file():
