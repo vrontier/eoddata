@@ -20,6 +20,7 @@ Please note that this package has a different version (due to development and pu
 
 ## API Key
 
+In order to use the EODData API, you will need to register yourself as a user. You can choose between a free tier and a paid subscription. Please check [their website](https://eoddata.com/products/default.aspx) for more information.
 Once you have registered yourself as a user, you will find your API key in your account area. You can use it to authenticate your requests.
 
 The client will look for your API key in the environment variable `EODDATA_API_KEY` and terminate if not set.
