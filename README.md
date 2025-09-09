@@ -143,7 +143,7 @@ Integration tests will:
 ## Requirements
 
 - Python 3.10+
-- requests
+- requests 2.32+
 
 ## License
 
