@@ -8,7 +8,7 @@ I am a long-time subscriber of EODData and have created this library for my own 
 
 ## Installation
 
-Due to a pending request regarding its naming, package is not yet available at [PyPI](https://pypi.org) production but only at [Test PyPI](https://test.pypi.org).
+Due to a pending request regarding its naming, the package is not yet available at [PyPI](https://pypi.org) production but only at [Test PyPI](https://test.pypi.org).
 
 You can install the production version package from there for testing purposes:
 ```bash
