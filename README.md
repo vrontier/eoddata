@@ -1,10 +1,10 @@
 # EODData Python Client
 
-A pythonic client library for accessing [EODData.com](https://eoddata.com) data API giving access to historical market data and fundamental data of various stock exchanges around the world, including the US, Canada, Europe.
+A pythonic client library for accessing [EODData.com](https://eoddata.com) data API giving access to historical market data and fundamental data of various stock exchanges around the world, including the US, Canada, Europe. The package echos the EODData REST API and adds API call accounting with quotas so that you can track your usage.
 
 Any API call beside Metadata requires an API key, which you will receive by registering yourself as a user. A free tier exists, which allows one to access US equities, crypto currencies, global indices and forex pairs (daily request limit). For more information about their products and services, please check their website.
 
-I am a long-time user of EODData and have created this library for my own use. I have decided to open source it so that others can benefit from it.
+I am a long-time subscriber of EODData and have created this library for my own use. I have decided to open source it so that others can benefit from it.
 
 ## Installation
 
@@ -21,38 +21,83 @@ The client will look for your API key in the environment variable `EODDATA_API_K
 ## Quick Start
 
 ```python
+"""
+Basic usage examples for EODData client
+"""
+
 import os
-from eoddata import EODDataClient
+from resource import RLIMIT_CPU
 
-# Initialize client with your API key
-api_key = os.getenv("EODDATA_API_KEY")
-client = EODDataClient(api_key=api_key)
+from eoddata import EODDataClient, EODDataError, AccountingTracker
 
-# Get metadata (no auth required)
-exchange_types = client.metadata.exchange_types()
-symbol_types = client.metadata.symbol_types()
 
-# Get exchanges and symbols
-exchanges = client.exchanges.list()
-nasdaq_symbols = client.symbols.list("NASDAQ")
+def main():
+    # Get API key from environment
+    api_key = os.getenv("EODDATA_API_KEY")
+    if not api_key:
+        print("Please set EODDATA_API_KEY environment variable")
+        return
 
-# Get quotes
-latest_quotes = client.quotes.list_by_exchange("NASDAQ")
-aapl_quote = client.quotes.get("NASDAQ", "AAPL")
-historical_quotes = client.quotes.list_by_symbol("NASDAQ", "AAPL",
-                                                from_date="2024-01-01",
-                                                to_date="2024-12-31")
+    # Create and enable API call accounting
+    accounting = AccountingTracker(debug=True)
+    accounting.start()
 
-# Get corporate information
-company_profile = client.corporate.profile_get("NASDAQ", "AAPL")
-dividends = client.corporate.dividends_by_symbol("NASDAQ", "AAPL")
-splits = client.corporate.splits_by_symbol("NASDAQ", "AAPL")
+    # EODData STANDARD membership
+    limit_60s = 10
+    limit_24h = 100
 
-# Get fundamental data
-fundamentals = client.fundamentals.get("NASDAQ", "AAPL")
+    # Enable quotas for API key (CORRECTED - now properly per API key)
+    accounting.enable_quotas(api_key, calls_60s=limit_60s, calls_24h=limit_24h)
 
-# Get technical indicators
-technicals = client.technicals.get("NASDAQ", "AAPL")
+    # Initialize client with optional debug mode
+    # Set debug=True to see detailed request/response logging
+    debug_mode = os.getenv("EODDATA_DEBUG", "").lower() in ('true', '1', 'yes')
+    client = EODDataClient(api_key=api_key, debug=debug_mode, accounting=accounting)
+
+    if debug_mode:
+        print("Debug mode enabled - detailed request/response logging will be shown")
+
+    try:
+        # Get metadata (no auth required)
+        print("Exchange Types:")
+        for exchange_type in client.metadata.exchange_types():
+            print(f"  {exchange_type['name']}")
+
+        print("\nSymbol Types:")
+        for symbol_type in client.metadata.symbol_types():
+            print(f"  {symbol_type['name']}")
+
+        # Get exchanges
+        print("\nFirst 5 Exchanges:")
+        exchanges = client.exchanges.list()
+        for exchange in exchanges[:5]:
+            print(f"  {exchange['code']}: {exchange['name']} ({exchange['country']})")
+
+        # Get symbols for NASDAQ
+        print("\nFirst 5 NASDAQ Symbols:")
+        symbols = client.symbols.list("NASDAQ")
+        for symbol in symbols[:5]:
+            print(f"  {symbol['code']}: {symbol['name']}")
+
+        # Get quote for AAPL
+        print("\nAAPL Latest Quote:")
+        quote = client.quotes.get("NASDAQ", "AAPL")
+        print(f"  Date: {quote['dateStamp']}")
+        print(f"  Open: ${quote['open']:.2f}")
+        print(f"  High: ${quote['high']:.2f}")
+        print(f"  Low: ${quote['low']:.2f}")
+        print(f"  Close: ${quote['close']:.2f}")
+        print(f"  Volume: {quote['volume']:,}")
+
+    except EODDataError as e:
+        print(f"Error: {e}")
+
+    accounting.stop()
+    print(accounting.summary())
+    print("\nBasic usage test completed successfully!\n")
+
+if __name__ == "__main__":
+    main()
 ```
 
 ## API Categories
