@@ -149,6 +149,133 @@ with EODDataClient(api_key=api_key) as client:
     quotes = client.quotes.list_by_exchange("NASDAQ")
 ```
 
+## API Call Accounting and Quota Management
+
+The EODData client includes comprehensive API call tracking and quota enforcement to help you monitor and manage your API usage effectively. This is particularly useful for managing rate limits and avoiding unexpected overages.
+
+### Features
+
+- **Call Tracking**: Track total calls, calls in the last 60 seconds, and calls in the last 24 hours
+- **Quota Enforcement**: Set and enforce limits to prevent exceeding your plan limits
+- **Per-Operation Tracking**: Monitor usage by specific API operations
+- **Persistent Storage**: Save and load tracking data between sessions
+- **Summary Reports**: Generate human-readable usage reports
+
+### Basic Usage
+
+```python
+from eoddata import EODDataClient, AccountingTracker
+
+# Create and start accounting tracker
+accounting = AccountingTracker(debug=True)
+accounting.start()
+
+# Set quotas based on your EODData plan
+# Standard plan: 10 calls/60s, 100 calls/24h
+accounting.enable_quotas(
+    api_key="your_api_key",
+    calls_60s=10,
+    calls_24h=100
+)
+
+# Use client with accounting
+client = EODDataClient(api_key="your_api_key", accounting=accounting)
+
+# Make API calls - they're automatically tracked
+exchanges = client.exchanges.list()
+quotes = client.quotes.get("NASDAQ", "AAPL")
+
+# Check current usage
+accounting.check_quota("your_api_key")  # Raises OutOfQuotaError if exceeded
+
+# Generate usage report
+print(accounting.summary())
+
+# Save tracking data
+accounting.save_to_file("usage_data.json")
+
+# Stop tracking
+accounting.stop()
+```
+
+### Sample Output
+
+The `accounting.summary()` method provides a detailed breakdown of your API usage:
+
+```
+EODData Call Accounting Summary
+========================================
+
+API Key: XXXX****XXXX
+  Global Totals:
+    Total calls: 5
+    60s calls: 5
+    24h calls: 5
+  Operations:
+    List_ExchangeType:
+      Total calls: 1
+      60s calls: 1
+      24h calls: 1
+    List_SymbolType:
+      Total calls: 1
+      60s calls: 1
+      24h calls: 1
+    List_Exchange:
+      Total calls: 1
+      60s calls: 1
+      24h calls: 1
+    List_Symbol:
+      Total calls: 1
+      60s calls: 1
+      24h calls: 1
+    Get_Quote:
+      Total calls: 1
+      60s calls: 1
+      24h calls: 1
+```
+
+### Advanced Features
+
+#### Persistent Data Storage
+
+```python
+# Save current state
+filename = accounting.save_to_file()  # Auto-generates timestamped filename
+# Or specify custom filename
+accounting.save_to_file("my_usage_data.json")
+
+# Load previous state
+accounting.load_from_file("my_usage_data.json")
+```
+
+#### Reset Tracking
+
+```python
+# Reset all counters while keeping quotas
+accounting.reset()
+```
+
+#### Quota Violation Handling
+
+```python
+from eoddata import OutOfQuotaError
+
+try:
+    client.quotes.get("NASDAQ", "AAPL")
+except OutOfQuotaError as e:
+    print(f"Quota exceeded: {e.message}")
+    print(f"Quota type: {e.quota_type}")  # 'total', 'calls_60s', or 'calls_24h'
+```
+
+### EODData Plan Integration
+
+The accounting system works seamlessly with EODData's subscription plans:
+
+- **Free Tier**: Set conservative limits for testing
+- **Standard Plan**: 10 calls/60s, 100 calls/24h
+- **Professional Plan**: Higher limits based on your subscription
+- **Enterprise**: Custom limits
+
 ## EODData REST API Documentation
 Since August, 30th 2025 EODData has offered a [REST API](https://api.eoddata.com/) for its subscribers. It offers developers and analysts seamless access to a wide range of financial market data, including:
 
