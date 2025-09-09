@@ -3,8 +3,10 @@ Main client class for EODData API
 """
 
 import requests
+import logging
 from typing import Optional
 from .exceptions import EODDataError, EODDataAPIError, EODDataAuthError
+from . import __version__
 from .api.metadata import MetadataAPI
 from .api.exchanges import ExchangesAPI
 from .api.symbols import SymbolsAPI
@@ -22,18 +24,30 @@ class EODDataClient:
         api_key (str): Your EODData API key
         base_url (str): Base URL for the API (default: official EODData API)
         timeout (int): Request timeout in seconds (default: 30)
+        debug (bool): Enable verbose logging of requests and responses (default: False)
 
     Example:
         >>> client = EODDataClient(api_key="your_api_key")
         >>> exchanges = client.exchanges.list()
         >>> quotes = client.quotes.list_by_exchange("NASDAQ")
+
+        >>> # Enable debug mode for troubleshooting
+        >>> client = EODDataClient(api_key="your_api_key", debug=True)
+        >>> exchanges = client.exchanges.list()  # Will log request/response details
     """
 
-    def __init__(self, api_key: str, base_url: str = "https://api.eoddata.com/v1", timeout: int = 30):
+    def __init__(self, api_key: str, base_url: str = "https://api.eoddata.com", timeout: int = 30, debug: bool = False):
         self.api_key = api_key
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
-        
+        self.debug = debug
+
+        # Set up logger for debug mode
+        self.logger = logging.getLogger('eoddata.client')
+        if self.debug:
+            logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            self.logger.setLevel(logging.DEBUG)
+
         # Check for default placeholder API key
         if self.api_key == "PLACE_YOUR_API_KEY_HERE":
             raise ValueError(
@@ -53,6 +67,10 @@ class EODDataClient:
 
         # Session for connection pooling
         self._session = requests.Session()
+        # Set proper User-Agent identifying this Python client
+        self._session.headers.update({
+            'User-Agent': f'eoddata-python/{__version__} (Python API Client; https://github.com/vrontier/eoddata)'
+        })
 
     @property
     def metadata(self) -> MetadataAPI:
@@ -129,6 +147,17 @@ class EODDataClient:
         if 'ApiKey' not in params and self.api_key:
             params['ApiKey'] = self.api_key
 
+        # Log request details in debug mode
+        if self.debug:
+            # Mask API key for security
+            debug_params = params.copy() if params else {}
+            if 'ApiKey' in debug_params:
+                debug_params['ApiKey'] = '***MASKED***'
+
+            self.logger.debug(f"Making {method} request to: {url}")
+            self.logger.debug(f"Request parameters: {debug_params}")
+            self.logger.debug(f"Request headers: {dict(self._session.headers)}")
+
         try:
             response = self._session.request(
                 method=method,
@@ -137,6 +166,15 @@ class EODDataClient:
                 timeout=self.timeout,
                 **kwargs
             )
+
+            # Log response details in debug mode
+            if self.debug:
+                content_length = len(response.content) if response.content else 0
+                self.logger.debug(f"Response status code: {response.status_code}")
+                self.logger.debug(f"Response headers: {dict(response.headers)}")
+                self.logger.debug(f"Response content length: {content_length} bytes")
+                if response.status_code != 200:
+                    self.logger.debug(f"Response content preview: {response.text[:500]}...")
 
             # Handle different status codes
             if response.status_code == 401:

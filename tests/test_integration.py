@@ -33,12 +33,12 @@ def get_api_key():
     api_key = os.getenv("EODDATA_API_KEY")
     if api_key:
         return api_key
-    
+
     # Try .env file
     api_key = load_env_file()
     if api_key:
         return api_key
-    
+
     return None
 
 
@@ -54,14 +54,14 @@ def test_integration_metadata_endpoints():
     api_key = get_api_key()
     if not api_key:
         pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-    
+
     client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-    
+
     try:
         # Test metadata endpoints
         exchange_types = client.metadata.exchange_types()
         assert isinstance(exchange_types, list)
-        
+
         symbol_types = client.metadata.symbol_types()
         assert isinstance(symbol_types, list)
     except EODDataError as e:
@@ -76,9 +76,9 @@ def test_integration_exchanges_endpoints():
     api_key = get_api_key()
     if not api_key:
         pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-    
+
     client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-    
+
     try:
         # Test exchanges endpoint
         exchanges = client.exchanges.list()
@@ -93,9 +93,9 @@ def test_integration_symbols_endpoints():
     api_key = get_api_key()
     if not api_key:
         pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-    
+
     client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-    
+
     try:
         # Test symbols endpoint
         symbols = client.symbols.list("NASDAQ")
@@ -110,9 +110,9 @@ def test_integration_quotes_endpoints():
     api_key = get_api_key()
     if not api_key:
         pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-    
+
     client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-    
+
     try:
         # Test quotes endpoint
         quotes = client.quotes.list_by_exchange("NASDAQ")
@@ -127,9 +127,9 @@ def test_integration_corporate_endpoints():
     api_key = get_api_key()
     if not api_key:
         pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-    
+
     client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-    
+
     # Test corporate endpoint
     try:
         profile = client.corporate.profile_get("NASDAQ", "AAPL")
@@ -144,9 +144,9 @@ def test_integration_fundamentals_endpoints():
     api_key = get_api_key()
     if not api_key:
         pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-    
+
     client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-    
+
     # Test fundamentals endpoint
     try:
         fundamentals = client.fundamentals.get("NASDAQ", "AAPL")
@@ -161,9 +161,9 @@ def test_integration_technicals_endpoints():
     api_key = get_api_key()
     if not api_key:
         pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-    
+
     client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-    
+
     # Test technicals endpoint
     try:
         technicals = client.technicals.get("NASDAQ", "AAPL")
@@ -176,36 +176,36 @@ def test_integration_technicals_endpoints():
 def run_integration_tests_interactive():
     """Run integration tests with user confirmation"""
     import sys
-    
+
     print("This will run integration tests that call the real EODData API.")
     print("These tests may consume your API credits and take longer to run.")
-    
+
     # Check if API key is available
     api_key = get_api_key()
     if not api_key:
         print("Error: No API key found in environment variables or .env file.")
         return False
-    
+
     print(f"Using API key: {api_key[:4]}...{api_key[-4:]}")
     response = input("Do you want to proceed with live API calls? (y/N): ").strip().lower()
-    
+
     if response not in ['y', 'yes']:
         print("Integration tests cancelled.")
         return False
-    
+
     # Run the integration tests
     try:
         import subprocess
         result = subprocess.run([
-            sys.executable, '-m', 'pytest', 
-            'tests/test_integration.py', 
+            sys.executable, '-m', 'pytest',
+            'tests/test_integration.py',
             '-v', '--tb=short'
         ], capture_output=True, text=True)
-        
+
         print(result.stdout)
         if result.stderr:
             print("STDERR:", result.stderr)
-            
+
         return result.returncode == 0
     except Exception as e:
         print(f"Error running integration tests: {e}")

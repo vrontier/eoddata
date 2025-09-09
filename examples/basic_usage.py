@@ -13,8 +13,13 @@ def main():
         print("Please set EODDATA_API_KEY environment variable")
         return
 
-    # Initialize client
-    client = EODDataClient(api_key=api_key)
+    # Initialize client with optional debug mode
+    # Set debug=True to see detailed request/response logging
+    debug_mode = os.getenv("EODDATA_DEBUG", "").lower() in ('true', '1', 'yes')
+    client = EODDataClient(api_key=api_key, debug=debug_mode)
+
+    if debug_mode:
+        print("Debug mode enabled - detailed request/response logging will be shown")
 
     try:
         # Get metadata (no auth required)

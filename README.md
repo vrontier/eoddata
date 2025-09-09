@@ -1,4 +1,7 @@
 
+# Initialize client with debug mode (for troubleshooting API issues)
+client = EODDataClient(api_key="your_api_key", debug=True)
+
 The library uses EODData's [REST-based API](https://api.eoddata.com/scalar/v1) to retrieve data.
 
 # EODData Python Client
