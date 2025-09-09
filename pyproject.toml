@@ -3,8 +3,8 @@ requires = ["setuptools>=70", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "eoddata"
-version = "0.2.0"
+name = "eoddata-client"
+version = "0.1.0"
 description = "Python package for the EODData REST API."
 readme = "README.md"
 requires-python = ">=3.10"

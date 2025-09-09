@@ -3,7 +3,9 @@ Basic usage examples for EODData client
 """
 
 import os
-from eoddata import EODDataClient, EODDataError
+from resource import RLIMIT_CPU
+
+from eoddata import EODDataClient, EODDataError, AccountingTracker
 
 
 def main():
@@ -13,10 +15,21 @@ def main():
         print("Please set EODDATA_API_KEY environment variable")
         return
 
+    # Create and enable API call accounting
+    accounting = AccountingTracker(debug=True)
+    accounting.start()
+
+    # EODData STANDARD membership
+    limit_60s = 10
+    limit_24h = 100
+
+    # Enable quotas for API key (CORRECTED - now properly per API key)
+    accounting.enable_quotas(api_key, calls_60s=limit_60s, calls_24h=limit_24h)
+
     # Initialize client with optional debug mode
     # Set debug=True to see detailed request/response logging
     debug_mode = os.getenv("EODDATA_DEBUG", "").lower() in ('true', '1', 'yes')
-    client = EODDataClient(api_key=api_key, debug=debug_mode)
+    client = EODDataClient(api_key=api_key, debug=debug_mode, accounting=accounting)
 
     if debug_mode:
         print("Debug mode enabled - detailed request/response logging will be shown")
@@ -56,6 +69,9 @@ def main():
     except EODDataError as e:
         print(f"Error: {e}")
 
+    accounting.stop()
+    print(accounting.summary())
+    print("\nBasic usage test completed successfully!\n")
 
 if __name__ == "__main__":
     main()

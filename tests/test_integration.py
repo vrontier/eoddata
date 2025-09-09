@@ -5,6 +5,8 @@ Integration tests that call the real EODData API
 
 import os
 import re
+import subprocess
+import sys
 import time
 import pytest
 from eoddata import EODDataClient, EODDataError
@@ -13,175 +15,152 @@ from eoddata import EODDataClient, EODDataError
 pytestmark = pytest.mark.skip(reason="Integration tests disabled by default")
 
 
-def load_env_file():
-    """Load API key from .env file"""
-    try:
-        with open('.env', 'r') as f:
-            content = f.read()
-            # Look for EODDATA_API_KEY pattern
-            match = re.search(r'EODDATA_API_KEY\s*=\s*(.+)', content)
-            if match:
-                return match.group(1).strip().strip('"\'')
-    except FileNotFoundError:
-        pass
-    return None
+class TestIntegration:
+
+    @staticmethod
+    def _load_env_file():
+        """Load API key from .env file"""
+        try:
+            with open('.env', 'r') as f:
+                content = f.read()
+                match = re.search(r'EODDATA_API_KEY\s*=\s*(.+)', content)
+                if match:
+                    return match.group(1).strip().strip('"\'')
+        except FileNotFoundError:
+            pass
+        return None
+
+    @staticmethod
+    def _get_api_key():
+        """Get API key from environment or .env file"""
+        api_key = os.getenv("EODDATA_API_KEY")
+        if api_key:
+            return api_key
+        
+        api_key = TestIntegration._load_env_file()
+        if api_key:
+            return api_key
+        
+        return None
+
+    def test_integration_api_key_exists(self):
+        """Check if API key is available for integration tests"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
 
-def get_api_key():
-    """Get API key from environment or .env file"""
-    # Try environment variable first
-    api_key = os.getenv("EODDATA_API_KEY")
-    if api_key:
-        return api_key
+    def test_integration_metadata_endpoints(self):
+        """Integration test for metadata endpoints"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
-    # Try .env file
-    api_key = load_env_file()
-    if api_key:
-        return api_key
+        client = EODDataClient(api_key=api_key, timeout=10)
 
-    return None
+        try:
+            exchange_types = client.metadata.exchange_types()
+            assert isinstance(exchange_types, list)
 
+            symbol_types = client.metadata.symbol_types()
+            assert isinstance(symbol_types, list)
+        except EODDataError:
+            # If we get a 403 or other API error, it might be rate limiting
+            # This is still valid testing - we're verifying the client handles errors properly
+            pass
 
-def test_integration_api_key_exists():
-    """Check if API key is available for integration tests"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
+    def test_integration_exchanges_endpoints(self):
+        """Integration test for exchanges endpoints"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
+        client = EODDataClient(api_key=api_key, timeout=10)
 
-def test_integration_metadata_endpoints():
-    """Integration test for metadata endpoints"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
+        try:
+            exchanges = client.exchanges.list()
+            assert isinstance(exchanges, list)
+        except EODDataError:
+            pass
 
-    client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
+    def test_integration_symbols_endpoints(self):
+        """Integration test for symbols endpoints"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
-    try:
-        # Test metadata endpoints
-        exchange_types = client.metadata.exchange_types()
-        assert isinstance(exchange_types, list)
+        client = EODDataClient(api_key=api_key, timeout=10)
 
-        symbol_types = client.metadata.symbol_types()
-        assert isinstance(symbol_types, list)
-    except EODDataError as e:
-        # If we get a 403 or other API error, it might be rate limiting
-        # This is still valid testing - we're verifying the client handles errors properly
-        print(f"Metadata test failed (might be rate limiting): {e}")
-        # Don't fail the test - just continue to ensure client handles errors
+        try:
+            symbols = client.symbols.list("NASDAQ")
+            assert isinstance(symbols, list)
+        except EODDataError:
+            pass
 
+    def test_integration_quotes_endpoints(self):
+        """Integration test for quotes endpoints"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
-def test_integration_exchanges_endpoints():
-    """Integration test for exchanges endpoints"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
+        client = EODDataClient(api_key=api_key, timeout=10)
 
-    client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
+        try:
+            quotes = client.quotes.list_by_exchange("NASDAQ")
+            assert isinstance(quotes, list)
+        except EODDataError:
+            pass
 
-    try:
-        # Test exchanges endpoint
-        exchanges = client.exchanges.list()
-        assert isinstance(exchanges, list)
-    except EODDataError as e:
-        print(f"Exchanges test failed (might be rate limiting): {e}")
-        # Don't fail the test - just continue to ensure client handles errors
+    def test_integration_corporate_endpoints(self):
+        """Integration test for corporate endpoints"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
+        client = EODDataClient(api_key=api_key, timeout=10)
 
-def test_integration_symbols_endpoints():
-    """Integration test for symbols endpoints"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
+        try:
+            profile = client.corporate.profile_get("NASDAQ", "AAPL")
+            assert isinstance(profile, dict)
+        except EODDataError:
+            pass
 
-    client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
+    def test_integration_fundamentals_endpoints(self):
+        """Integration test for fundamentals endpoints"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
-    try:
-        # Test symbols endpoint
-        symbols = client.symbols.list("NASDAQ")
-        assert isinstance(symbols, list)
-    except EODDataError as e:
-        print(f"Symbols test failed (might be rate limiting): {e}")
-        # Don't fail the test - just continue to ensure client handles errors
+        client = EODDataClient(api_key=api_key, timeout=10)
 
+        try:
+            fundamentals = client.fundamentals.get("NASDAQ", "AAPL")
+            assert isinstance(fundamentals, dict)
+        except EODDataError:
+            pass
 
-def test_integration_quotes_endpoints():
-    """Integration test for quotes endpoints"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
+    def test_integration_technicals_endpoints(self):
+        """Integration test for technicals endpoints"""
+        api_key = self._get_api_key()
+        if not api_key:
+            pytest.skip("EODDATA_API_KEY not found in environment or .env file")
 
-    client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
+        client = EODDataClient(api_key=api_key, timeout=10)
 
-    try:
-        # Test quotes endpoint
-        quotes = client.quotes.list_by_exchange("NASDAQ")
-        assert isinstance(quotes, list)
-    except EODDataError as e:
-        print(f"Quotes test failed (might be rate limiting): {e}")
-        # Don't fail the test - just continue to ensure client handles errors
-
-
-def test_integration_corporate_endpoints():
-    """Integration test for corporate endpoints"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-
-    client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-
-    # Test corporate endpoint
-    try:
-        profile = client.corporate.profile_get("NASDAQ", "AAPL")
-        assert isinstance(profile, dict)
-    except EODDataError as e:
-        print(f"Corporate test failed: {e}")
-        # Don't fail the test - just continue to ensure client handles errors
-
-
-def test_integration_fundamentals_endpoints():
-    """Integration test for fundamentals endpoints"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-
-    client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-
-    # Test fundamentals endpoint
-    try:
-        fundamentals = client.fundamentals.get("NASDAQ", "AAPL")
-        assert isinstance(fundamentals, dict)
-    except EODDataError as e:
-        print(f"Fundamentals test failed: {e}")
-        # Don't fail the test - just continue to ensure client handles errors
-
-
-def test_integration_technicals_endpoints():
-    """Integration test for technicals endpoints"""
-    api_key = get_api_key()
-    if not api_key:
-        pytest.skip("EODDATA_API_KEY not found in environment or .env file")
-
-    client = EODDataClient(api_key=api_key, timeout=10)  # Increased timeout
-
-    # Test technicals endpoint
-    try:
-        technicals = client.technicals.get("NASDAQ", "AAPL")
-        assert isinstance(technicals, dict)
-    except EODDataError as e:
-        print(f"Technicals test failed: {e}")
-        # Don't fail the test - just continue to ensure client handles errors
+        try:
+            technicals = client.technicals.get("NASDAQ", "AAPL")
+            assert isinstance(technicals, dict)
+        except EODDataError:
+            pass
 
 
 def run_integration_tests_interactive():
     """Run integration tests with user confirmation"""
-    import sys
-
     print("This will run integration tests that call the real EODData API.")
     print("These tests may consume your API credits and take longer to run.")
 
     # Check if API key is available
-    api_key = get_api_key()
+    api_key = TestIntegration._get_api_key()
     if not api_key:
         print("Error: No API key found in environment variables or .env file.")
         return False
@@ -195,7 +174,6 @@ def run_integration_tests_interactive():
 
     # Run the integration tests
     try:
-        import subprocess
         result = subprocess.run([
             sys.executable, '-m', 'pytest',
             'tests/test_integration.py',
@@ -213,5 +191,4 @@ def run_integration_tests_interactive():
 
 
 if __name__ == "__main__":
-    # This allows running integration tests manually
     run_integration_tests_interactive()

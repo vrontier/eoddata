@@ -1,9 +1,3 @@
-
-# Initialize client with debug mode (for troubleshooting API issues)
-client = EODDataClient(api_key="your_api_key", debug=True)
-
-The library uses EODData's [REST-based API](https://api.eoddata.com/scalar/v1) to retrieve data.
-
 # EODData Python Client
 
 A pythonic client library for accessing [EODData.com](https://eoddata.com) data API giving access to historical market data and fundamental data of various stock exchanges around the world, including the US, Canada, Europe.
@@ -15,7 +9,7 @@ I am a long-time user of EODData and have created this library for my own use. I
 ## Installation
 
 ```bash
-pip install eoddata
+pip install eoddata-client
 ```
 
 ## API Key
@@ -72,6 +66,10 @@ The client is organized into logical categories that mirror the EODData API stru
 - **`client.corporate`** - Company profiles, splits, dividends
 - **`client.fundamentals`** - Financial metrics (PE, EPS, etc.)
 - **`client.technicals`** - Technical indicators (MA, RSI, etc.)
+
+## Debugging
+
+The client includes a `debug` flag that can be used to enable verbose logging. Setting the environment variable `EODDATA_DEBUG` to `true` will enable debug logging.
 
 ## Error Handling
 

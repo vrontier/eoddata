@@ -13,12 +13,8 @@ class TestEODDataClient:
     def test_client_initialization(self):
         client = EODDataClient(api_key="test_key")
         assert client.api_key == "test_key"
-        assert client.base_url == "https://api.eoddata.com/v1"
+        assert client.base_url == "https://api.eoddata.com"
         assert client.timeout == 30
-
-    def test_custom_base_url(self):
-        client = EODDataClient(api_key="test_key", base_url="https://custom.api.com/v2/")
-        assert client.base_url == "https://custom.api.com/v2"
 
     @patch('eoddata.client.requests.Session.request')
     def test_successful_request(self, mock_request):

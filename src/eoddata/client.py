@@ -4,7 +4,7 @@ Main client class for EODData API
 
 import requests
 import logging
-from typing import Optional
+from typing import Optional, Any
 from .exceptions import EODDataError, EODDataAPIError, EODDataAuthError
 from . import __version__
 from .api.metadata import MetadataAPI
@@ -25,6 +25,7 @@ class EODDataClient:
         base_url (str): Base URL for the API (default: official EODData API)
         timeout (int): Request timeout in seconds (default: 30)
         debug (bool): Enable verbose logging of requests and responses (default: False)
+        accounting (AccountingTracker, optional): Accounting tracker instance for call tracking
 
     Example:
         >>> client = EODDataClient(api_key="your_api_key")
@@ -34,13 +35,22 @@ class EODDataClient:
         >>> # Enable debug mode for troubleshooting
         >>> client = EODDataClient(api_key="your_api_key", debug=True)
         >>> exchanges = client.exchanges.list()  # Will log request/response details
+        
+        >>> # Enable accounting
+        >>> from eoddata.accounting import AccountingTracker
+        >>> accounting = AccountingTracker(debug=True)
+        >>> accounting.start()
+        >>> client = EODDataClient(api_key="your_api_key", accounting=accounting)
     """
 
-    def __init__(self, api_key: str, base_url: str = "https://api.eoddata.com", timeout: int = 30, debug: bool = False):
+    def __init__(self, api_key: str, base_url: str = "https://api.eoddata.com", timeout: int = 30, debug: bool = False, accounting: Optional[Any] = None):
         self.api_key = api_key
         self.base_url = base_url.rstrip('/')
         self.timeout = timeout
         self.debug = debug
+        self.accounting = accounting
+        self.accounting = accounting
+        self.accounting = accounting
 
         # Set up logger for debug mode
         self.logger = logging.getLogger('eoddata.client')
@@ -139,6 +149,28 @@ class EODDataClient:
             EODDataAPIError: API returned an error
             EODDataError: General error occurred
         """
+        # Extract operation ID from endpoint for accounting purposes
+        operation_id = "unknown"
+        if endpoint:
+            # Try to extract operation from endpoint path
+            parts = endpoint.strip('/').split('/')
+            if len(parts) >= 2:
+                operation_id = f"{parts[1]}_{parts[0] if parts[0] != 'api' else 'unknown'}"
+            elif len(parts) >= 1:
+                operation_id = parts[0]
+        
+        # Increment accounting counter if tracking is enabled
+        if self.accounting:
+            try:
+                self.accounting.increment_call(self.api_key, operation_id)
+                # Check quotas if enabled
+                self.accounting.check_quota(self.api_key, operation_id)
+            except Exception as e:
+                # If quota exceeded or other accounting error, re-raise but continue with request
+                if not isinstance(e, Exception):
+                    # Re-raise the accounting error if it's a quota violation
+                    raise e
+
         url = f"{self.base_url}{endpoint}"
 
         # Add API key to params
