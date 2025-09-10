@@ -6,11 +6,11 @@ A pythonic way to access EODData.com historical market data API.
 
 try:
     from importlib.metadata import version
-    __version__ = version("eoddata-client")
+    __version__ = version("eoddata-api")
 except ImportError:
     # Python < 3.8 fallback
     from importlib_metadata import version
-    __version__ = version("eoddata-client")
+    __version__ = version("eoddata-api")
 except Exception:
     # Fallback for development/edge cases
     __version__ = "unknown"

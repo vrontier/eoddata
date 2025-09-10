@@ -11,8 +11,8 @@ import time
 import pytest
 from eoddata import EODDataClient, EODDataError
 
-# Skip integration tests by default
-pytestmark = pytest.mark.skip(reason="Integration tests disabled by default")
+# Integration tests require an API key -> please comment the line below to run the tests
+pytestmark = pytest.mark.skip(reason="Integration tests disabled by default as they require an API key")
 
 
 class TestIntegration:
@@ -36,11 +36,11 @@ class TestIntegration:
         api_key = os.getenv("EODDATA_API_KEY")
         if api_key:
             return api_key
-        
+
         api_key = TestIntegration._load_env_file()
         if api_key:
             return api_key
-        
+
         return None
 
     def test_integration_api_key_exists(self):

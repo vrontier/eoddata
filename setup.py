@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="eoddata-client",
+    name="eoddata-api",
     version="0.1.0",
     author="Mike Quest",
     author_email="github@vrontier.org",

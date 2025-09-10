@@ -12,8 +12,7 @@ Due to a pending request regarding its naming, the package is not yet available 
 
 You can install the production version package from there for testing purposes:
 ```bash
-pip install -i https://test.pypi.org/simple/ --no-deps eoddata
-pip install requests
+pip install eoddata-api
 ```
 
 Please note that this package has a different version (due to development and publishing tests) than the one on PyPI will have. But you can uninstall it once the package at PyPI will be available as the functionality will be the same.

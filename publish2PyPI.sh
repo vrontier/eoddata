@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Script configuration
-PACKAGE_NAME="eoddata-client"
+PACKAGE_NAME="eoddata-api"
 DIST_DIR="dist"
 BUILD_DIR="build"
 EGG_INFO_DIR="src/${PACKAGE_NAME}.egg-info"
@@ -55,12 +55,12 @@ validate_env_vars() {
         print_error "PYPI_TEST_API_KEY environment variable is not set"
         return 1
     fi
-    
+
     if [[ -z "$PYPI_API_KEY" ]]; then
         print_error "PYPI_API_KEY environment variable is not set"
         return 1
     fi
-    
+
     print_success "Environment variables validated"
     return 0
 }
@@ -68,31 +68,31 @@ validate_env_vars() {
 # Function to clean up build artifacts
 cleanup_artifacts() {
     print_status "Cleaning up existing build artifacts..."
-    
+
     # Remove distribution directory
     if [[ -d "$DIST_DIR" ]]; then
         rm -rf "$DIST_DIR"
         print_status "Removed $DIST_DIR directory"
     fi
-    
+
     # Remove build directory
     if [[ -d "$BUILD_DIR" ]]; then
         rm -rf "$BUILD_DIR"
         print_status "Removed $BUILD_DIR directory"
     fi
-    
+
     # Remove egg-info directory
     if [[ -d "$EGG_INFO_DIR" ]]; then
         rm -rf "$EGG_INFO_DIR"
         print_status "Removed $EGG_INFO_DIR directory"
     fi
-    
+
     # Remove any __pycache__ directories
     find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-    
+
     # Remove any .pyc files
     find . -type f -name "*.pyc" -delete 2>/dev/null || true
-    
+
     print_success "Build artifacts cleaned up"
 }
 
@@ -110,7 +110,7 @@ get_current_version() {
 # Function to run pre-publish checks
 run_checks() {
     print_status "Running pre-publish checks..."
-    
+
     # Check if we're in a git repository and if there are uncommitted changes
     if git rev-parse --git-dir > /dev/null 2>&1; then
         if ! git diff-index --quiet HEAD --; then
@@ -123,7 +123,7 @@ run_checks() {
             fi
         fi
     fi
-    
+
     # Check if virtual environment is activated
     if [[ -z "$VIRTUAL_ENV" ]] && [[ -z "$CONDA_DEFAULT_ENV" ]]; then
         print_warning "No virtual environment detected. It's recommended to use a virtual environment."
@@ -134,7 +134,7 @@ run_checks() {
             exit 1
         fi
     fi
-    
+
     # Run tests if available
     if command -v python >/dev/null 2>&1; then
         if python -m pytest --version >/dev/null 2>&1 && [[ -d "tests" ]]; then
@@ -148,30 +148,30 @@ run_checks() {
             print_warning "No pytest or tests directory found, skipping tests"
         fi
     fi
-    
+
     print_success "Pre-publish checks completed"
 }
 
 # Function to build the package
 build_package() {
     print_status "Building package..."
-    
+
     # Ensure build tools are available
     if ! python -m build --version >/dev/null 2>&1; then
         print_error "python build module not found. Install it with: pip install build"
         exit 1
     fi
-    
+
     # Build the package
     python -m build
-    
+
     if [[ ! -d "$DIST_DIR" ]] || [[ -z "$(ls -A $DIST_DIR)" ]]; then
         print_error "Build failed - no files in $DIST_DIR directory"
         exit 1
     fi
-    
+
     print_success "Package built successfully"
-    
+
     # Show built files
     print_status "Built files:"
     ls -la "$DIST_DIR"
@@ -182,7 +182,7 @@ publish_package() {
     local target=$1
     local repository_url=""
     local api_key=""
-    
+
     if [[ "$target" == "test" ]]; then
         repository_url="https://test.pypi.org/legacy/"
         api_key="$PYPI_TEST_API_KEY"
@@ -195,23 +195,23 @@ publish_package() {
         print_error "Invalid target: $target"
         exit 1
     fi
-    
+
     # Ensure twine is available
     if ! python -m twine --version >/dev/null 2>&1; then
         print_error "twine not found. Install it with: pip install twine"
         exit 1
     fi
-    
+
     # Upload using twine
     python -m twine upload \
         --repository-url "$repository_url" \
         --username __token__ \
         --password "$api_key" \
         "$DIST_DIR"/*
-    
+
     if [[ $? -eq 0 ]]; then
         print_success "Package published successfully to $target"
-        
+
         # Show installation instructions
         local version=$(get_current_version)
         if [[ "$target" == "test" ]]; then
@@ -249,47 +249,47 @@ confirm_production() {
 main() {
     echo "🚀 PyPI Package Publisher"
     echo "========================="
-    
+
     # Check arguments
     if [[ $# -ne 1 ]]; then
         show_usage
         exit 1
     fi
-    
+
     local target=$1
-    
+
     if [[ "$target" != "test" ]] && [[ "$target" != "prod" ]]; then
         print_error "Invalid target: $target"
         show_usage
         exit 1
     fi
-    
+
     # Validate environment variables
     if ! validate_env_vars; then
         exit 1
     fi
-    
+
     # Show current version
     local version=$(get_current_version)
     print_status "Current package version: $version"
-    
+
     # Confirm production deployment
     if [[ "$target" == "prod" ]]; then
         confirm_production
     fi
-    
+
     # Clean up previous build artifacts
     cleanup_artifacts
-    
+
     # Run pre-publish checks
     run_checks
-    
+
     # Build the package
     build_package
-    
+
     # Publish the package
     publish_package "$target"
-    
+
     print_success "✅ Deployment completed successfully!"
 }
 
